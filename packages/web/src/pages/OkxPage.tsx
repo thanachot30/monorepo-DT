@@ -1,53 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, TextField, Typography } from '@mui/material'
-import { log } from 'console'
-import React, { useState } from 'react'
 
+import React, { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { User, apiById, apiList } from '@org/shared-model';
+import { count } from 'console';
 type Props = {}
-
-// const mockData = [
-//     { id: 1, strategyName: 'Scalping BTC/USDT' },
-//     { id: 2, strategyName: 'ETH Long Swing' },
-//     { id: 3, strategyName: 'Arbitrage Bot' },
-//     { id: 4, strategyName: 'Short-term Momentum' }
-// ]
-const mockData = [
-    {
-        id: 1,
-        strategyName: 'Scalping BTC/USDT',
-        user: { name: 'Alice', email: 'alice@example.com' },
-        items: [
-            { name: 'Entry Point A', strategy: 'main' },
-            { name: 'Exit Point B', strategy: 'sub' }
-        ]
-    },
-    {
-        id: 2,
-        strategyName: 'ETH Long Swing',
-        user: { name: 'Bob', email: 'bob@example.com' },
-        items: [
-            { name: 'Support Level', strategy: 'main' },
-            { name: 'Resistance Breakout', strategy: 'sub' }
-        ]
-    },
-    {
-        id: 3,
-        strategyName: 'Arbitrage Bot',
-        user: { name: 'Charlie', email: 'charlie@example.com' },
-        items: [
-            { name: 'Exchange 1', strategy: 'main' },
-            { name: 'Exchange 2', strategy: 'sub' }
-        ]
-    },
-    {
-        id: 4,
-        strategyName: 'Short-term Momentum',
-        user: { name: 'Dana', email: 'dana@example.com' },
-        items: [
-            { name: 'Spike Detection', strategy: 'main' },
-            { name: 'Trailing Stop', strategy: 'sub' }
-        ]
-    }
-]
 
 export interface StrategyItem {
     name: string
@@ -72,8 +31,13 @@ enum modeProp {
     view = 'view'
 }
 
-
-
+interface NewSub {
+    userId: string;
+    title: string;
+    apiKey: string;
+    secretKey: string;
+    passphrase: string;
+}
 
 const OkxPage = (props: Props) => {
     const [open, setOpen] = useState(false)
@@ -81,45 +45,38 @@ const OkxPage = (props: Props) => {
 
     const [isAddSubOpen, setIsAddSubOpen] = useState(false)
     const [strategyType, setStrategyType] = useState<'main' | 'sub'>('sub')
-    const [newSub, setNewSub] = useState({
-        userEmail: '',
+    const [newSub, setNewSub] = useState<NewSub>({
+        userId: '',
         title: '',
         apiKey: '',
         secretKey: '',
         passphrase: ''
     })
-    const [userSelect, setUserSelect] = useState<any[]>([])
+    const [userId, setuserId] = useState<string>()
+    const [apiId, setApiId] = useState<string>()
     const [modeAddSub, setAddSub] = useState<modeProp>()
     const [isDisable, setIsDisable] = useState<boolean>(false)
-    // Example user options
-    const userOptions = [
-        { name: 'Alice', email: 'alice@example.com' },
-        { name: 'Bob', email: 'bob@example.com' }
-    ]
 
-    const fixUser = [
-        { name: 'alice', email: 'alice@example.com' },
-    ]
 
     const handleOpenAddSub = (user?: string | null, mode?: modeProp) => {
 
-        console.log(user);
-        console.log(mode);
+        // console.log(user);
+        // console.log(mode);
         setAddSub(mode)
         if (mode === modeProp.newmain) {
             setIsDisable(false)
             setStrategyType('main')
-            setUserSelect(userOptions)
+
         } else if (mode === modeProp.newsub && user) {
             setIsDisable(false)
             setStrategyType('sub')
-            setUserSelect(fixUser)
+
         } else if (mode === modeProp.view) {
             setIsDisable(true)
         }
 
         setNewSub({
-            userEmail: '',
+            userId: '',
             title: '',
             apiKey: '',
             secretKey: '',
@@ -130,7 +87,7 @@ const OkxPage = (props: Props) => {
     const handleCloseAddSub = () => {
         setIsAddSubOpen(false)
         setNewSub({
-            userEmail: '',
+            userId: '',
             title: '',
             apiKey: '',
             secretKey: '',
@@ -138,15 +95,71 @@ const OkxPage = (props: Props) => {
         })
     }
 
-    const handleView = (strategy: Strategy) => {
-        setSelectedStrategy(strategy)
+    const handleView = async (id: string, userId: string) => {
+        setuserId(userId)
+        setApiId(id)
+        await refetch_apiView()
         setOpen(true)
+
     }
 
     const handleClose = () => {
         setOpen(false)
         setSelectedStrategy(null)
     }
+
+    const handleSaveApi = (newsub: NewSub) => {
+        return
+    }
+
+    const fetchApiMain = async () => {
+        const { data } = await axios.get<apiList[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`);
+        return data;
+    }
+
+    const fetchApiView = async () => {
+        const { data } = await axios.post<apiById>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/${apiId}`, {
+            userId: userId
+        })
+        return data
+    }
+
+    const fetchUsers = async (): Promise<User[]> => {
+        const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
+        return data;
+    };
+
+
+    const { data: apiList, isLoading: apiList_isLoading, error: apiList_error } = useQuery({
+        queryKey: ['apiMain'],
+        queryFn: fetchApiMain,
+    });
+
+    const { data: apiView, isLoading: apiView_isLoading, error: apiView_error, refetch: refetch_apiView, isFetched: apiView_isFetched } = useQuery({
+        queryKey: ['apiView', apiId, userId],
+        queryFn: fetchApiView,
+        enabled: false
+    })
+
+    const { data: users, isLoading: users_isLoading, error: users_error, refetch: users_refetch } = useQuery({
+        queryKey: ['users'],
+        queryFn: fetchUsers,
+    });
+
+
+
+    useEffect(() => {
+        if (userId && apiId) {
+            refetch_apiView()
+        }
+    }, [userId, apiId])
+
+
+    if (apiList_isLoading) return <p>Loading...</p>;
+    if (apiList_error instanceof Error) return <p>Error: {apiList_error.message}</p>;
+
+    console.log({ newSub });
+
 
     return (
         <Container maxWidth="lg">
@@ -158,7 +171,7 @@ const OkxPage = (props: Props) => {
             </Box>
             <Paper elevation={2}>
                 <List>
-                    {mockData.map((item, index) => (
+                    {apiList && apiList.map((item, index) => (
                         <React.Fragment key={item.id}>
                             <ListItem
                                 secondaryAction={
@@ -167,7 +180,7 @@ const OkxPage = (props: Props) => {
                                             variant="outlined"
                                             color="primary"
                                             size="small"
-                                            onClick={() => handleView(item)}
+                                            onClick={() => handleView(item.id, item.userId)}
                                         >
                                             view
                                         </Button>
@@ -175,11 +188,11 @@ const OkxPage = (props: Props) => {
                                 }
                             >
                                 <ListItemText
-                                    primary={`Strategy Main: ${item.strategyName}`}
+                                    primary={`${item.title}`}
                                 />
 
                             </ListItem>
-                            {index < mockData.length - 1 && <Divider />}
+                            {index < apiList.length - 1 && <Divider />}
                         </React.Fragment>
                     ))}
                 </List>
@@ -188,11 +201,11 @@ const OkxPage = (props: Props) => {
             <Dialog open={open} maxWidth="md" fullWidth>
                 <DialogTitle>Strategy Details</DialogTitle>
                 <DialogContent dividers>
-                    {selectedStrategy && (
+                    {apiView && apiView.user && (
                         <>
                             <Box >
-                                <Typography>Name: {selectedStrategy.user.name}</Typography>
-                                <Typography>Email: {selectedStrategy.user.email}</Typography>
+                                <Typography>Name: {apiView.user.username}</Typography>
+                                <Typography>Email: {apiView.user.email}</Typography>
                             </Box>
                             <Divider variant='fullWidth' />
                             <Box mt={2}>
@@ -200,18 +213,19 @@ const OkxPage = (props: Props) => {
                                     {/* <Typography variant="subtitle1">Strategies Lists</Typography> */}
                                     <Box sx={{ display: 'flex', justifyContent: 'end', px: '16px' }}>
                                         <Button
-                                            variant="outlined"
+                                            variant="contained"
                                             color="primary"
                                             size="small"
-                                            onClick={() => handleOpenAddSub(selectedStrategy.user.email, modeProp.newsub)}
+                                            onClick={() => handleOpenAddSub(apiView.user.username, modeProp.newsub)}
                                         >
                                             Add Sub
                                         </Button>
                                     </Box>
 
-
+                                    {apiView_isLoading && <p>Loading...</p>}
+                                    {apiView_error && <p>Error: {apiView_error.message}</p>}
                                     <List dense >
-                                        {selectedStrategy.items.map((item, idx) => (
+                                        {apiView && apiView.data && apiView.data.map((item, idx) => (
                                             <ListItem key={idx}
                                                 secondaryAction={
                                                     <Box >
@@ -227,7 +241,7 @@ const OkxPage = (props: Props) => {
                                                 }
                                             >
                                                 <ListItemText
-                                                    primary={item.name}
+                                                    primary={item.title ?? `sub${idx}`}
                                                     secondary={`Type: ${item.strategy}`}
                                                 />
                                             </ListItem>
@@ -246,22 +260,35 @@ const OkxPage = (props: Props) => {
             </Dialog>
 
             <Dialog open={isAddSubOpen} onClose={handleCloseAddSub} maxWidth="sm" fullWidth>
-                <DialogTitle>Add Sub Strategy</DialogTitle>
+                <DialogTitle>{strategyType === 'main' ? 'Add Main' : 'Add Sub'}</DialogTitle>
                 <DialogContent dividers>
                     <Box display="flex" flexDirection="column" gap={2}>
                         <TextField
                             disabled={isDisable}
                             select
                             label="User"
-                            value={newSub.userEmail}
-                            onChange={(e) => setNewSub({ ...newSub, userEmail: e.target.value })}
+                            value={strategyType === 'main' ? newSub.userId : apiView?.user.username}
+                            onChange={(e) => setNewSub({ ...newSub, userId: e.target.value, })}
                             fullWidth
+                            onClick={() => {
+                                if (strategyType === 'main') {
+                                    users_refetch()
+                                }
+                            }}
+
                         >
-                            {userSelect && userSelect.length > 0 && userSelect.map((user) => (
-                                <MenuItem key={user.email} value={user.email}>
-                                    {user.name} ({user.email})
-                                </MenuItem>
-                            ))}
+                            {strategyType === 'sub' && apiView && apiView.user &&
+                                <MenuItem value={apiView.user.username}>
+                                    {apiView.user.username}
+                                </MenuItem>}
+
+                            {strategyType === 'main' && users && users.length > 0 &&
+                                users.map((user, index) => (
+                                    <MenuItem key={index} value={user.id}>
+                                        {user.username}
+                                    </MenuItem>
+                                ))
+                            }
                         </TextField>
 
                         <TextField
@@ -308,11 +335,7 @@ const OkxPage = (props: Props) => {
                     <Button onClick={handleCloseAddSub}>Cancel</Button>
                     <Button
                         variant="contained"
-                        onClick={() => {
-                            console.log('Submitted new sub:', newSub)
-                            handleCloseAddSub()
-                            // Optional: add to selectedStrategy.items here
-                        }}
+                        onClick={() => handleSaveApi(newSub)}
                     >
                         Save
                     </Button>

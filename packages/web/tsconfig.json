@@ -3,6 +3,9 @@
   "include": [],
   "references": [
     {
+      "path": "../shared-model"
+    },
+    {
       "path": "./tsconfig.app.json"
     }
   ],

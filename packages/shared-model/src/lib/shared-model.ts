@@ -6,8 +6,28 @@ export interface User {
   id: string;
   username: string;
   email: string;
+}
+
+export interface createUser {
+  username: string;
+  email: string;
   affiliate: string;
-  createdAt: Date; // or Date if you want to parse it
-  createdBy: string | null;
-  isDelete: boolean;
+}
+
+export interface apiList {
+  id: string;
+  title: string;
+  userId: string;
+}
+
+export interface apiById {
+  data: {
+    id: string;
+    strategy: string;
+    title: string | null;
+  }[];
+  user: {
+    username: string;
+    email: string;
+  };
 }

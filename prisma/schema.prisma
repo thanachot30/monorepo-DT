@@ -8,7 +8,7 @@ datasource db {
 }
 
 model ApiVariable {
-  id                     String                   @id @db.Uuid
+  id                     String                   @id @default(uuid()) @db.Uuid
   strategy               String
   platform               String
   variable               Json
@@ -26,7 +26,7 @@ model ApiVariable {
 }
 
 model Balance {
-  id          String      @id @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
   createdAt   DateTime    @default(now())
   apiId       String      @db.Uuid
   amount      Decimal?
@@ -42,7 +42,7 @@ model Balance {
 }
 
 model DetailCurPositionFuture {
-  id             String   @id @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
   createAt       DateTime @default(now())
   strategy       String
   email          String
@@ -56,7 +56,7 @@ model DetailCurPositionFuture {
 }
 
 model DetailCurrentPositionFuture {
-  id            String    @id @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
   calAt         DateTime  @default(now())
   orderCalAt    String?
   datetimeOpen  DateTime?
@@ -73,7 +73,7 @@ model DetailCurrentPositionFuture {
 }
 
 model FutureCurrent {
-  id          String      @id @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
   createdAt   DateTime    @default(now())
   data        Json
   apiId       String      @db.Uuid
@@ -81,7 +81,7 @@ model FutureCurrent {
 }
 
 model SpotCurrent {
-  id          String      @id @db.Uuid
+  id          String      @id @default(uuid()) @db.Uuid
   createdAt   DateTime    @default(now())
   data        Json
   apiId       String      @db.Uuid
@@ -89,7 +89,7 @@ model SpotCurrent {
 }
 
 model TableBalanceDetail {
-  id        String   @id @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   strategy  String
   create_at DateTime @default(now())
   email     String
@@ -99,7 +99,7 @@ model TableBalanceDetail {
 }
 
 model TransactionDetailsFuture {
-  id              String    @id @db.Uuid
+  id              String    @id @default(uuid()) @db.Uuid
   orderCalAt      String?
   createdAtOpen   DateTime?
   createdAtClose  DateTime?
@@ -119,7 +119,7 @@ model TransactionDetailsFuture {
 }
 
 model TransactionDetailsSpot {
-  id                String      @id @db.Uuid
+  id                String      @id @default(uuid()) @db.Uuid
   createdAt         DateTime    @default(now())
   asset             String
   sizeAmount        Decimal
@@ -141,13 +141,13 @@ model TransactionDetailsSpot {
 }
 
 model User {
+  id          String        @id @default(uuid()) @db.Uuid
   username    String        @unique
   email       String
   affiliate   String
   createdAt   DateTime      @default(now())
   isDelete    Boolean
-  id          String        @id @db.Uuid
-  createdBy              String?
+  createdBy   String?
   ApiVariable ApiVariable[]
   wallet      wallet[]      @ignore
 }

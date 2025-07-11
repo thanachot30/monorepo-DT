@@ -1,28 +1,32 @@
 import { Edit, Delete } from '@mui/icons-material';
-import { Container, Typography, Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, Divider, Box, Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
-import React, { useEffect, useState } from 'react'
+import { Container, Typography, Paper, List, ListItem, ListItemText, Divider, Box, Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import React, { useState } from 'react'
 import axios from 'axios';
 import { User } from '@org/shared-model'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 const UserPage = () => {
-    const [userList, setuserList] = useState<User[]>([])
+    // const [userList, setuserList] = useState<User[]>([])
+    const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     //
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<{ id: number; name: string } | null>(null);
+    const [userToDelete, setUserToDelete] = useState<{ userId: string; userName: string } | null>(null);
 
     const handleDeleteClick = (userId: string, userName: string) => {
-        // setUserToDelete({ id: userId, name: userName });
+        setUserToDelete({ userId, userName });
         setDeleteDialogOpen(true);
     };
 
     const handleConfirmDelete = () => {
-        // if (userToDelete) {
-        //     setUserToDelete(null);
-        //     setDeleteDialogOpen(false);
-        // }
+        if (userToDelete) {
+            DeleteUser(userToDelete.userId)
+            setDeleteDialogOpen(false);
+        }
+
     };
 
     const handleCancelDelete = () => {
@@ -41,10 +45,22 @@ const UserPage = () => {
 
     };
 
-    const handleSaveUser = () => {
-        console.log('New User:', { username, email });
-        // You can add it to users list if needed:
-        // setUsers([...users, { id: Date.now(), name: username, email, role: affiliate }]);
+    const handleSaveUser = async () => {
+        // console.log('New User:', { username, email });
+        // if (username && email) {
+        //     const create = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`, {
+        //         username,
+        //         email,
+        //     })
+
+        //     if (create) {
+        //         console.log({ create });
+        //     }
+        // }
+        // handleAddUserClose();
+        if (username && email) {
+            saveUser({ username, email });
+        }
         handleAddUserClose();
     };
 
@@ -56,20 +72,48 @@ const UserPage = () => {
         console.log('Delete user:', userId);
     };
 
-    useEffect(() => {
+    const fetchUsers = async (): Promise<User[]> => {
+        const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
+        return data;
+    };
+    const createUser = async (newUser: { username: string; email: string }) => {
+        console.log('createUser');
 
-        const fethUserInit = async () => {
-            const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`)
-            console.log({ data });
-            if (data) {
-                setuserList(data)
-            }
-            //console.log(import.meta.env.VITE_BACKEND_BASE_URL);]
-            return
-        }
+        const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`, newUser);
+        return data;
+    };
 
-        fethUserInit()
-    }, []);
+    const deleteUser = async (userId: string) => {
+        const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user/delete`, {
+            id: userId
+        })
+        return data
+    }
+
+    const { data: userList, isLoading, error } = useQuery({
+        queryKey: ['users'],
+        queryFn: fetchUsers,
+    });
+
+    const { mutate: saveUser } = useMutation({
+        mutationFn: createUser,
+        onSuccess: () => {
+            console.log('onSuccess');
+            queryClient.invalidateQueries({ queryKey: ['users'] }); // ✅ Refetch user list
+        },
+    });
+
+    const { mutate: DeleteUser } = useMutation({
+        mutationFn: deleteUser,
+        onSuccess: () => {
+            console.log('onSuccess');
+            queryClient.invalidateQueries({ queryKey: ['users'] }); // ✅ Refetch user list
+        },
+    })
+
+    if (isLoading) return <p>Loading...</p>;
+    if (error instanceof Error) return <p>Error: {error.message}</p>;
+
 
     return (
         <Container maxWidth="lg">
@@ -85,7 +129,6 @@ const UserPage = () => {
                     {userList && userList.map((user, index) => (
                         <React.Fragment key={user.id}>
                             <ListItem alignItems="flex-start"
-
                                 secondaryAction={
                                     <Box>
                                         <IconButton edge="end" size='small' color='info' onClick={() => handleEdit(user.id)}>
@@ -160,9 +203,9 @@ const UserPage = () => {
             <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogContent>
-                    <Typography>
+                    <Typography >
                         Are you sure you want to delete{' '}
-                        <strong>{userToDelete?.name}</strong>?
+                        <strong style={{ color: 'red' }} >{userToDelete?.userName}</strong>?
                     </Typography>
                 </DialogContent>
                 <DialogActions>
