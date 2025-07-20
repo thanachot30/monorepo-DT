@@ -48,3 +48,5 @@ vitest.config.*.timestamp*
 /generated/prisma
 
 .env
+
+pdms-pattana-*

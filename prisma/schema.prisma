@@ -16,13 +16,15 @@ model ApiVariable {
   title                  String?
   createdAt              DateTime?                @default(now()) // Optional with default
   createdBy              String?
-  relationToMain         String?
-  dataMarking            String?
+  relationToMain         String?                  @db.Uuid
+  dataMarking            Json?
   User                   User                     @relation(fields: [userId], references: [id])
   Balance                Balance[]
   FutureCurrent          FutureCurrent[]
   SpotCurrent            SpotCurrent[]
   TransactionDetailsSpot TransactionDetailsSpot[]
+  mainVariable           ApiVariable?             @relation("MainToRelated", fields: [relationToMain], references: [id])
+  ApiVariable ApiVariable[] @relation("MainToRelated")
 }
 
 model Balance {
