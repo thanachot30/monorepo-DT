@@ -59,7 +59,7 @@ export interface apiById {
   data: {
     id: string;
     strategy: string;
-    title: string | null;
+    title: string;
   }[];
   user: {
     id: string;
@@ -108,4 +108,10 @@ export enum modeProp {
   newmain = strategyTypeProp.main,
   newsub = strategyTypeProp.sub,
   view = 'view',
+}
+
+export interface DeleteItemProp {
+  id: string;
+  title: string;
+  strategy: string;
 }

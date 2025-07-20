@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography } from '@mui/material'
+import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography, IconButton } from '@mui/material'
 
 import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { ApiVariableDto, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
-import { count } from 'console';
-import { JsonObject } from '@prisma/client/runtime/library';
-type Props = {}
+import { ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
+import { Delete } from '@mui/icons-material';
 
 
 
-const OkxPage = (props: Props) => {
+
+const OkxPage = () => {
     const [open, setOpen] = useState(false)
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null)
 
@@ -32,7 +31,8 @@ const OkxPage = (props: Props) => {
     //
     const [modeAddSub, setAddSub] = useState<modeProp>()
     const [isDisable, setIsDisable] = useState<boolean>(false)
-
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteItem, setDeleteItem] = useState<DeleteItemProp>()
 
     const handleOpenAddSub = async (userId?: string | null, mode?: modeProp, apiId?: string) => {
 
@@ -101,9 +101,7 @@ const OkxPage = (props: Props) => {
         setIsAddSubOpen(true)
     }
     const handleCloseAddSub = () => {
-        setApiId(undefined)
-        setuserId(undefined)
-        // 
+
         setIsAddSubOpen(false)
         setNewSub({
             userId: '',
@@ -125,6 +123,8 @@ const OkxPage = (props: Props) => {
     }
 
     const handleClose = () => {
+        setApiId(undefined)
+        setuserId(undefined)
         setOpen(false)
         setSelectedStrategy(null)
     }
@@ -182,6 +182,24 @@ const OkxPage = (props: Props) => {
 
     }
 
+    const handleCancelDelete = () => {
+        setDeleteItem(undefined)
+        setDeleteDialogOpen(false);
+    };
+
+    const handleConfirmDelete = () => {
+        console.log("");
+    };
+
+    const handleDelete = (_id: string, _title: string, _strategy: string) => {
+        setDeleteItem({
+            id: _id,
+            title: _title,
+            strategy: _strategy
+        })
+        setDeleteDialogOpen(true);
+    }
+
     const fetchApiMain = async () => {
         const { data } = await axios.get<apiList[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`);
         return data;
@@ -232,6 +250,8 @@ const OkxPage = (props: Props) => {
     // console.log({ newSub });
     console.log({ apiView });
     // console.log({ users });
+    console.log({ deleteItem });
+
 
 
     return (
@@ -301,7 +321,7 @@ const OkxPage = (props: Props) => {
                                         {apiView && apiView.data && apiView.data.map((item, idx) => (
                                             <ListItem key={idx}
                                                 secondaryAction={
-                                                    <Box >
+                                                    <Box sx={{ display: 'flex' }}>
                                                         <Button
                                                             variant="outlined"
                                                             size="small"
@@ -309,6 +329,11 @@ const OkxPage = (props: Props) => {
                                                         >
                                                             View detail
                                                         </Button>
+                                                        <Box>
+                                                            <IconButton edge="end" size='small' color='error' onClick={() => handleDelete(item.id, item.title, item.strategy)}>
+                                                                <Delete />
+                                                            </IconButton>
+                                                        </Box>
                                                     </Box>
 
                                                 }
@@ -335,6 +360,7 @@ const OkxPage = (props: Props) => {
                 <DialogContent dividers>
                     <Box display="flex" flexDirection="column" gap={2}>
                         <Select
+                            disabled={isDisable}
                             required
                             labelId="user-select-label"
                             id="user-select"
@@ -408,6 +434,22 @@ const OkxPage = (props: Props) => {
                             </Button>
                     }
 
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogContent>
+                    <Typography >
+                        Are you sure you want to delete{' '}
+                        <strong style={{ color: 'red' }} >{deleteItem?.title}</strong>?
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete}>Cancel</Button>
+                    <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+                        Confirm Delete
+                    </Button>
                 </DialogActions>
             </Dialog>
 

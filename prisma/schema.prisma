@@ -18,6 +18,7 @@ model ApiVariable {
   createdBy              String?
   relationToMain         String?                  @db.Uuid
   dataMarking            Json?
+  isDelete               Boolean                  @default(false)
   User                   User                     @relation(fields: [userId], references: [id])
   Balance                Balance[]
   FutureCurrent          FutureCurrent[]
