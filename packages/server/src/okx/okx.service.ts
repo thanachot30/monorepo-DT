@@ -53,6 +53,7 @@ export class OkxService {
         where: {
           relationToMain: mainId,
           strategy: 'sub',
+          isDelete: false,
         },
         select: {
           id: true,
@@ -66,6 +67,7 @@ export class OkxService {
         where: {
           id: mainId,
           strategy: 'main',
+          isDelete: false,
         },
         select: {
           id: true,
@@ -210,6 +212,21 @@ export class OkxService {
     } catch (error) {
       throw new HttpException(
         `Error saveApiVariable: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  async Delete(_id: string) {
+    try {
+      await prisma.apiVariable.update({
+        where: { id: _id },
+        data: { isDelete: true },
+      });
+      return true;
+    } catch (error) {
+      throw new HttpException(
+        `Error Delete Variable: ${error} `,
         HttpStatus.BAD_REQUEST
       );
     }

@@ -187,11 +187,28 @@ const OkxPage = () => {
         setDeleteDialogOpen(false);
     };
 
-    const handleConfirmDelete = () => {
-        console.log("");
+    const handleConfirmDelete = async (_id: string, _strategy: string) => {
+        if (_strategy === strategyTypeProp.main) {
+            console.log('check main');
+        } else {
+            // console.log({ _id });
+            try {
+                const deleteApi = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`, {
+                    id: _id
+                })
+                // refetch update disply
+                await refetch_apiView()
+                //
+                setDeleteDialogOpen(false);
+
+                return
+            } catch (error) {
+                throw Error("Error Delete Api")
+            }
+        }
     };
 
-    const handleDelete = (_id: string, _title: string, _strategy: string) => {
+    const handleDelete = (_id: string, _title: string, _strategy: strategyTypeProp) => {
         setDeleteItem({
             id: _id,
             title: _title,
@@ -206,7 +223,7 @@ const OkxPage = () => {
     }
 
     const fetchApiView = async () => {
-        const { data } = await axios.post<apiById>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/id/${apiId}`, {
+        const { data } = await axios.post<apiById>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/${apiId}`, {
             userId: userId
         })
         return data
@@ -330,7 +347,7 @@ const OkxPage = () => {
                                                             View detail
                                                         </Button>
                                                         <Box>
-                                                            <IconButton edge="end" size='small' color='error' onClick={() => handleDelete(item.id, item.title, item.strategy)}>
+                                                            <IconButton edge="end" size='small' color='error' onClick={() => handleDelete(item.id, item.title, item.strategy as strategyTypeProp)}>
                                                                 <Delete />
                                                             </IconButton>
                                                         </Box>
@@ -447,7 +464,10 @@ const OkxPage = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCancelDelete}>Cancel</Button>
-                    <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+                    <Button variant="contained" color="error" onClick={() => {
+                        if (!deleteItem?.id || !deleteItem?.strategy) return;
+                        handleConfirmDelete(deleteItem.id, deleteItem.strategy);
+                    }}>
                         Confirm Delete
                     </Button>
                 </DialogActions>

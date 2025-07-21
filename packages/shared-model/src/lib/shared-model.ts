@@ -37,6 +37,10 @@ export interface saveApiVariableProp {
   relationToMain?: string;
 }
 
+export interface deleteProp {
+  id: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -113,5 +117,5 @@ export enum modeProp {
 export interface DeleteItemProp {
   id: string;
   title: string;
-  strategy: string;
+  strategy: strategyTypeProp;
 }

@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { OkxService } from './okx.service';
-import type { accountConfig, saveApiVariableProp } from '@org/shared-model';
+import type {
+  accountConfig,
+  saveApiVariableProp,
+  deleteProp,
+} from '@org/shared-model';
 @Controller('okx')
 export class OkxController {
   constructor(private readonly okxService: OkxService) {}
@@ -11,7 +15,7 @@ export class OkxController {
     return getList;
   }
 
-  @Post('/id/:mainid')
+  @Post(':mainid')
   async getApiById(
     @Body() body: { userId: string },
     @Param('mainid') mainid: string
@@ -63,5 +67,12 @@ export class OkxController {
     });
 
     return save;
+  }
+
+  @Post()
+  async DeleteApi(@Body() req: deleteProp) {
+    const { id } = req;
+    const softDelete = await this.okxService.Delete(id);
+    return softDelete;
   }
 }
