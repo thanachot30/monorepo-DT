@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography, IconButton } from '@mui/material'
+import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography, IconButton, InputAdornment } from '@mui/material'
 
 import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
-import { Delete } from '@mui/icons-material';
+import { editSub, ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
+import { Edit, Delete, FamilyRestroomTwoTone } from '@mui/icons-material';
+import { title } from 'process';
 
 
 
@@ -23,6 +24,14 @@ const OkxPage = () => {
         secretKey: '',
         passphrase: '',
         strategy: strategyTypeProp.main
+
+    })
+    const [editSub, setEditSub] = useState<editSub>({
+        id: '',
+        title: '',
+        apiKey: '',
+        secretKey: '',
+        passphrase: ''
     })
     const [userId, setuserId] = useState<string>()
     const [apiId, setApiId] = useState<string>()
@@ -33,6 +42,12 @@ const OkxPage = () => {
     const [isDisable, setIsDisable] = useState<boolean>(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteItem, setDeleteItem] = useState<DeleteItemProp>()
+    //
+    const [isEdited, setIsEdited] = useState<boolean>(false)
+    const [editingId_TITLE, setEditingId_TITLE] = useState<boolean>(false);
+    const [editingId_APIKEY, setEditingId_APIKEY] = useState<boolean>(false);
+    const [editingId_SECRETKEY, setEditingId_SECRETKEY] = useState<boolean>(false);
+    const [editingId_PASSPHRASE, setEditingId_PASSPHRASE] = useState<boolean>(false);
 
     const handleOpenAddSub = async (userId?: string | null, mode?: modeProp, apiId?: string) => {
 
@@ -42,14 +57,7 @@ const OkxPage = () => {
         if (mode === modeProp.newmain) {
             setIsDisable(false)
             setStrategyType(modeProp.newmain)
-            setNewSub({
-                userId: '',
-                title: '',
-                apiKey: '',
-                secretKey: '',
-                passphrase: '',
-                strategy: strategyTypeProp.main
-            })
+            reSetNewSub()
 
         } else if (mode === modeProp.newsub) {
             if (!userId) {
@@ -58,6 +66,7 @@ const OkxPage = () => {
             if (!apiId) {
                 throw Error("apiId is not defind")
             }
+            resetAllEditStates(true)
             setIsDisable(false)
             setStrategyType(modeProp.newsub)
             setNewSub({
@@ -77,12 +86,15 @@ const OkxPage = () => {
             // console.log('apiId', apiId);
             // console.log('see', newSub);
             try {
-
-                const { data } = await axios.post<ApiVariableDto>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/detail/${apiId}`)
+                if (!apiId) {
+                    throw Error("apiId is not defind")
+                }
+                const data = await fetchDetail(apiId)
                 console.log({ data });
                 const mask = data.dataMarking
                 const _title = data.title ?? ""
-
+                const id_api = data.id
+                setEditSub({ ...editSub, id: id_api })
                 setNewSub({
                     userId: data.userId,
                     title: _title,
@@ -95,14 +107,36 @@ const OkxPage = () => {
             } catch (error) {
                 throw Error(`Error get detail: ${error}`)
             }
-
-
         }
+        // else if (mode === modeProp.edit) {
+        //     setIsDisable(false)
+        //     setStrategyType(modeProp.edit)
+        //     try {
+        //         if (!apiId) {
+        //             throw Error("apiId is not defind")
+        //         }
+        //         const data = await fetchDetail(apiId)
+        //         console.log({ data });
+        //         const mask = data.dataMarking
+        //         const _title = data.title ?? ""
+        //         setNewSub({
+        //             userId: data.userId,
+        //             title: _title,
+        //             apiKey: mask.apiKey_mask,
+        //             secretKey: mask.secretKey_mask,
+        //             passphrase: mask.passphrase_mask,
+        //             strategy: data.strategy as unknown as strategyTypeProp
+
+        //         })
+        //     } catch (error) {
+        //         throw Error(`Error get detail: ${error}`)
+        //     }
+
+        // }
         setIsAddSubOpen(true)
     }
-    const handleCloseAddSub = () => {
 
-        setIsAddSubOpen(false)
+    const reSetNewSub = () => {
         setNewSub({
             userId: '',
             title: '',
@@ -113,6 +147,25 @@ const OkxPage = () => {
         })
     }
 
+    const reSetEditSub = () => {
+        setEditSub({
+            id: '',
+            title: '',
+            apiKey: '',
+            secretKey: '',
+            passphrase: ''
+        })
+    }
+    const handleCloseAddSub = () => {
+        setIsEdited(false)
+        resetAllEditStates(false)
+        setIsAddSubOpen(false)
+
+        reSetEditSub()
+        reSetNewSub()
+
+    }
+
     const handleView = async (_id: string, _userId: string) => {
         setuserId(_userId)
         setApiId(_id)
@@ -121,17 +174,42 @@ const OkxPage = () => {
         }
         setOpen(true)
     }
+    const resetAllEditStates = (status: boolean) => {
+        setEditingId_TITLE(status);
+        setEditingId_APIKEY(status);
+        setEditingId_SECRETKEY(status);
+        setEditingId_PASSPHRASE(status);
+    };
 
     const handleClose = () => {
+        //reset edit text field
+        resetAllEditStates(false)
+        //
+        setIsEdited(false)
         setApiId(undefined)
         setuserId(undefined)
         setOpen(false)
         setSelectedStrategy(null)
     }
 
+    const handleEditApi = async (edit: editSub) => {
+        try {
+            console.log("editData", editSub);
+            try {
+                const update = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/edit`, editSub)
+
+            } catch (error) {
+                console.log(error);
+
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     const handleSaveApi = async (newsub: NewSub) => {
         try {
-            console.log({ newSub });
+            //console.log({ newSub });
             //check config
             const _data = {
                 "apiKey": newSub.apiKey.trim(),
@@ -177,7 +255,8 @@ const OkxPage = () => {
             setIsAddSubOpen(false)
             return
         } catch (error) {
-            console.error('Error while checking config', error);
+            // console.error('Error while checking config', error);
+            throw Error('Error while checking config')
         }
 
     }
@@ -234,6 +313,11 @@ const OkxPage = () => {
         return data;
     };
 
+    const fetchDetail = async (apiId: string) => {
+        const { data } = await axios.post<ApiVariableDto>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/detail/${apiId}`)
+        return data
+    }
+
 
     const { data: apiList, isLoading: apiList_isLoading, error: apiList_error, refetch: apiList_refetch } = useQuery({
         queryKey: ['apiMain'],
@@ -260,14 +344,15 @@ const OkxPage = () => {
     }, [userId, apiId])
 
 
+
     if (apiList_isLoading) return <p>Loading...</p>;
     if (apiList_error instanceof Error) return <p>Error: {apiList_error.message}</p>;
 
-
-    // console.log({ newSub });
-    console.log({ apiView });
-    // console.log({ users });
-    console.log({ deleteItem });
+    console.log({ isEdited });
+    console.log({ newSub });
+    // console.log({ apiView });
+    // // console.log({ users });
+    // console.log({ deleteItem });
 
 
 
@@ -347,10 +432,15 @@ const OkxPage = () => {
                                                             View detail
                                                         </Button>
                                                         <Box>
-                                                            <IconButton edge="end" size='small' color='error' onClick={() => handleDelete(item.id, item.title, item.strategy as strategyTypeProp)}>
+                                                            <IconButton edge="end" color='error' onClick={() => handleDelete(item.id, item.title, item.strategy as strategyTypeProp)}>
                                                                 <Delete />
                                                             </IconButton>
                                                         </Box>
+                                                        {/* <Box>
+                                                            <IconButton edge="end" color='secondary' onClick={() => handleOpenAddSub(null, modeProp.edit, item.id)}>
+                                                                <Edit />
+                                                            </IconButton>
+                                                        </Box> */}
                                                     </Box>
 
                                                 }
@@ -386,51 +476,142 @@ const OkxPage = () => {
                             onChange={(e) => setNewSub({ ...newSub, userId: e.target.value })}
 
                         >
-                            {(strategyType === modeProp.newsub || strategyType === modeProp.view) && apiView?.user && (
+                            {(strategyType === modeProp.newsub || strategyType === modeProp.view || strategyType === modeProp.edit) && apiView?.user && (
                                 <MenuItem value={apiView.user.id}>{apiView.user.username}</MenuItem>
                             )}
 
-                            {strategyType === modeProp.newmain && users?.map((user) => (
+                            {strategyType === modeProp.newmain && users && users.map((user) => (
                                 <MenuItem key={user.id} value={user.id}>
                                     {user.username}
                                 </MenuItem>
                             ))}
                         </Select>
                         <TextField
-                            disabled={isDisable}
+                            disabled={!editingId_TITLE}
                             label="Strategy Title"
                             value={newSub.title}
-                            onChange={(e) => setNewSub({ ...newSub, title: e.target.value })}
+                            onChange={(e) => {
+                                setNewSub({ ...newSub, title: e.target.value })
+                                // for edit mode
+                                if (isEdited) {
+                                    setEditSub({ ...editSub, title: e.target.value })
+                                }
+                            }}
                             fullWidth
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        {strategyType === modeProp.view ?
+
+                                            <IconButton onClick={() => {
+                                                setIsEdited(true)
+                                                setEditingId_TITLE(!editingId_TITLE)
+                                            }
+                                            }>
+                                                <Edit />
+                                            </IconButton>
+                                            :
+                                            <></>
+                                        }
+
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
 
                         <TextField
-                            disabled={isDisable}
+                            disabled={!editingId_APIKEY}
                             label="API Key"
                             value={newSub.apiKey}
-                            onChange={(e) => setNewSub({ ...newSub, apiKey: e.target.value })}
+                            onChange={(e) => {
+                                setNewSub({ ...newSub, apiKey: e.target.value })
+                                if (isEdited) setEditSub({ ...editSub, apiKey: e.target.value })
+                            }}
                             fullWidth
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        {strategyType === modeProp.view ?
+                                            <IconButton onClick={() => {
+                                                setIsEdited(true)
+                                                setEditingId_APIKEY(!editingId_APIKEY)
+                                            }
+                                            }>
+                                                <Edit />
+                                            </IconButton>
+                                            :
+                                            <></>
+                                        }
+
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
 
                         <TextField
-                            disabled={isDisable}
+                            disabled={!editingId_SECRETKEY}
                             label="Secret Key"
                             value={newSub.secretKey}
-                            onChange={(e) => setNewSub({ ...newSub, secretKey: e.target.value })}
+                            onChange={(e) => {
+                                setNewSub({ ...newSub, secretKey: e.target.value })
+                                if (isEdited) setEditSub({ ...editSub, secretKey: e.target.value })
+                            }}
                             fullWidth
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        {strategyType === modeProp.view ?
+                                            <IconButton onClick={() => {
+                                                setIsEdited(true)
+                                                setEditingId_SECRETKEY(!editingId_SECRETKEY)
+                                            }
+                                            }
+                                            >
+                                                <Edit />
+                                            </IconButton>
+                                            :
+                                            <></>
+                                        }
+
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
 
                         <TextField
-                            disabled={isDisable}
+                            disabled={!editingId_PASSPHRASE}
                             label="Passphrase"
                             value={newSub.passphrase}
-                            onChange={(e) => setNewSub({ ...newSub, passphrase: e.target.value })}
+                            onChange={(e) => {
+                                setNewSub({ ...newSub, passphrase: e.target.value })
+                                if (isEdited) setEditSub({ ...editSub, passphrase: e.target.value })
+                            }}
                             fullWidth
+
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        {strategyType === modeProp.view ?
+                                            <IconButton onClick={() => {
+                                                setEditingId_PASSPHRASE(!editingId_PASSPHRASE)
+                                                setIsEdited(true)
+                                            }
+                                            }
+                                            >
+                                                <Edit />
+
+                                            </IconButton>
+                                            :
+                                            <></>
+                                        }
+
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
 
                         <TextField
                             label="Strategy Type"
-                            //value={strategyType === modeProp.newmain ? modeProp.newmain : modeProp.newsub}
                             value={newSub.strategy}
                             disabled
                             fullWidth
@@ -439,16 +620,23 @@ const OkxPage = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseAddSub}>{strategyType === modeProp.view ? 'close' : 'cancel'}</Button>
+                    {(strategyType === modeProp.newmain || strategyType === modeProp.newsub) &&
+                        <Button
+                            variant="contained"
+                            onClick={() => handleSaveApi(newSub)}
+                        >
+                            Save
+                        </Button>
+                    }
                     {
-                        strategyType === modeProp.view ?
-                            <></>
-                            :
-                            <Button
-                                variant="contained"
-                                onClick={() => handleSaveApi(newSub)}
-                            >
-                                Save
-                            </Button>
+                        (strategyType === modeProp.view && isEdited === true) &&
+
+                        <Button
+                            variant="contained"
+                            onClick={() => handleEditApi(editSub)}
+                        >
+                            Edit
+                        </Button>
                     }
 
                 </DialogActions>

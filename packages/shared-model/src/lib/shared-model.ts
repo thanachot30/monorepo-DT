@@ -27,6 +27,13 @@ export interface NewSub {
   strategy: strategyTypeProp;
   relationToMain?: string;
 }
+export interface editSub {
+  id: string;
+  title: string;
+  apiKey: string;
+  secretKey: string;
+  passphrase: string;
+}
 export interface saveApiVariableProp {
   userId: string;
   title: string;
@@ -112,6 +119,7 @@ export enum modeProp {
   newmain = strategyTypeProp.main,
   newsub = strategyTypeProp.sub,
   view = 'view',
+  edit = 'edit',
 }
 
 export interface DeleteItemProp {

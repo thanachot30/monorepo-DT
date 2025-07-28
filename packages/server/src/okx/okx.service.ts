@@ -105,6 +105,22 @@ export class OkxService {
     }
   }
 
+  async getRawVariable(apiId: string) {
+    try {
+      const variable = await prisma.apiVariable.findFirst({
+        where: {
+          id: apiId,
+        },
+        select: {
+          variable: true,
+        },
+      });
+      return variable;
+    } catch (error) {
+      throw new HttpException('error:getRawVariable', HttpStatus.BAD_REQUEST);
+    }
+  }
+
   async getDetail(apiId: string) {
     try {
       const detail = await prisma.apiVariable.findFirst({
@@ -154,12 +170,35 @@ export class OkxService {
       console.log('✅ Headers are valid:', data);
       return true;
     } catch (error) {
-      console.log(error);
       throw new HttpException(
         `Error CheckConfig: ${error} `,
         HttpStatus.BAD_REQUEST
       );
       return false;
+    }
+  }
+
+  async DecryptKMS(data: string) {
+    try {
+      const decrypt = await this.kmsService.decrypt(data);
+      return decrypt;
+    } catch (error) {
+      throw new HttpException(
+        `Error DecodeKMS: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  async EncodeKMS(data: string) {
+    try {
+      const encrypt = await this.kmsService.encrypt(data);
+      return encrypt;
+    } catch (error) {
+      throw new HttpException(
+        `Error EncodeKMS: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
     }
   }
 
@@ -191,9 +230,9 @@ export class OkxService {
         passphrase_mask,
       };
       const variableJson = {
-        apiKey_encrypt,
-        secretKey_encrypt,
-        passphrase_encrypt,
+        apiKey: apiKey_encrypt,
+        secretKey: secretKey_encrypt,
+        passphrase: passphrase_encrypt,
       };
       console.log({ strategy, relationToMain });
       const save = await prisma.apiVariable.create({
@@ -227,6 +266,28 @@ export class OkxService {
     } catch (error) {
       throw new HttpException(
         `Error Delete Variable: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  update(id: string, dataUpdate: Record<string, string>) {
+    try {
+      const update = prisma.apiVariable.update({
+        where: { id: id },
+        data: dataUpdate,
+        select: {
+          id: true,
+          userId: true,
+          strategy: true,
+          title: true,
+          dataMarking: true,
+        },
+      });
+      return update;
+    } catch (error) {
+      throw new HttpException(
+        `Error update: ${error} `,
         HttpStatus.BAD_REQUEST
       );
     }
