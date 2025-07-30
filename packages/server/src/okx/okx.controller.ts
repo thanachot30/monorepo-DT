@@ -16,6 +16,7 @@ import type {
   deleteProp,
   editSub,
   checkConfig,
+  maskData,
 } from '@org/shared-model';
 @Controller('okx')
 export class OkxController {
@@ -73,7 +74,8 @@ export class OkxController {
   @Post('/edit')
   async editApi(@Body() req: editSub) {
     const { id, title, apiKey, secretKey, passphrase } = req;
-
+    let variableForUpdate: checkConfig | undefined = undefined;
+    let maskedForUpdate: maskData | undefined = undefined;
     if (!id) throw new HttpException('Missing ID', HttpStatus.BAD_REQUEST);
 
     const updateData: Record<string, string> = {};
@@ -114,13 +116,47 @@ export class OkxController {
           HttpStatus.BAD_REQUEST
         );
       }
+      //Encrypt data
+      const apiKey_encrypt = await this.okxService.EncodeKMS(
+        newVariable.apiKey
+      );
+      const secretKey_encrypt = await this.okxService.EncodeKMS(
+        newVariable.secretKey
+      );
+      const passphrase_encrypt = await this.okxService.EncodeKMS(
+        newVariable.passphrase
+      );
+      //Masking Data
+      const apiKey_mask = this.okxService.maskMiddleFixed(newVariable.apiKey);
+      const secretKey_mask = this.okxService.maskMiddleFixed(
+        newVariable.secretKey
+      );
+      const passphrase_mask = this.okxService.maskAllExceptFirstAndLast4(
+        newVariable.passphrase
+      );
+      //
+      variableForUpdate = {
+        apiKey: apiKey_encrypt,
+        secretKey: secretKey_encrypt,
+        passphrase: passphrase_encrypt,
+      };
+      maskedForUpdate = {
+        apiKey_mask: apiKey_mask,
+        secretKey_mask: secretKey_mask,
+        passphrase_mask: passphrase_mask,
+      };
     }
 
     if (Object.keys(updateData).length === 0) {
       throw new HttpException('No fields to update', HttpStatus.BAD_REQUEST);
     }
     //
-    const update = await this.okxService.update(id, updateData);
+    const update = await this.okxService.update(
+      id,
+      updateData.title,
+      variableForUpdate,
+      maskedForUpdate
+    );
     console.log({ update });
     return update;
   }

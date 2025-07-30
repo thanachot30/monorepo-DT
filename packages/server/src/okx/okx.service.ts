@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { checkConfig, saveApiVariableProp } from '@org/shared-model';
+import { checkConfig, saveApiVariableProp, maskData } from '@org/shared-model';
 import * as crypto from 'crypto';
 import axios from 'axios';
 import { KmsService } from '../kms/kms.service';
@@ -271,11 +271,27 @@ export class OkxService {
     }
   }
 
-  update(id: string, dataUpdate: Record<string, string>) {
+  update(
+    id: string,
+    title?: string,
+    variableKey?: checkConfig,
+    masked?: maskData
+  ) {
     try {
+      const data: any = {};
+      if (title !== undefined) {
+        data.title = title;
+      }
+      if (variableKey !== undefined) {
+        data.variable = variableKey;
+      }
+      if (masked !== undefined) {
+        data.dataMarking = masked;
+      }
+      console.log({ data });
       const update = prisma.apiVariable.update({
         where: { id: id },
-        data: dataUpdate,
+        data,
         select: {
           id: true,
           userId: true,
@@ -288,6 +304,30 @@ export class OkxService {
     } catch (error) {
       throw new HttpException(
         `Error update: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  maskMiddleFixed(data: string) {
+    try {
+      const masked = this.kmsService.maskMiddleFixed(data);
+      return masked;
+    } catch (error) {
+      throw new HttpException(
+        `Error maskMiddleFixed: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  maskAllExceptFirstAndLast4(data: string) {
+    try {
+      const masked = this.kmsService.maskAllExceptFirstAndLast4(data);
+      return masked;
+    } catch (error) {
+      throw new HttpException(
+        `Error maskAllExceptFirstAndLast4: ${error} `,
         HttpStatus.BAD_REQUEST
       );
     }
