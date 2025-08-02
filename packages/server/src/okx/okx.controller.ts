@@ -36,7 +36,6 @@ export class OkxController {
   @Post('/check/config')
   async okxCheck(@Body() req: accountConfig) {
     const { apiKey, secretKey, passphrase } = req;
-    console.log({ apiKey, secretKey, passphrase });
     const data = {
       apiKey,
       secretKey,
@@ -161,11 +160,18 @@ export class OkxController {
     return update;
   }
 
-  @Post()
+  @Delete()
   async DeleteApi(@Body() req: deleteProp) {
-    const { id } = req;
-    const softDelete = await this.okxService.Delete(id);
-    return softDelete;
+    console.log({ req });
+    const { id, isMain } = req;
+    if (isMain) {
+      //
+      const deleteMain = await this.okxService.DeleteMain(id);
+      return deleteMain;
+    } else {
+      const deleteSub = await this.okxService.Delete(id);
+      return deleteSub;
+    }
   }
 
   @Post('/:mainid')

@@ -46,6 +46,7 @@ export interface saveApiVariableProp {
 
 export interface deleteProp {
   id: string;
+  isMain?: boolean;
 }
 
 export interface User {

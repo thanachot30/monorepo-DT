@@ -32,6 +32,7 @@ export class UserController {
   async createUser(@Body() body: userProp) {
     const { username, email } = body;
     const isExist = await this.userService.IsExistsEmail(username);
+    console.log(isExist);
     if (isExist) {
       throw new HttpException('Email is alreay exist', HttpStatus.BAD_REQUEST);
     }
@@ -40,6 +41,7 @@ export class UserController {
       email,
       affiliate: 'main',
     };
+    console.log('createUser');
     const create = await this.userService.createUser(userData);
 
     return create;

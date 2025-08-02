@@ -32,6 +32,7 @@ export class OkxService {
       const getLists = await prisma.apiVariable.findMany({
         where: {
           strategy: 'main',
+          isDelete: false,
         },
         select: {
           id: true,
@@ -167,13 +168,10 @@ export class OkxService {
       const { data } = await axios.get(`${this.baseURL}${endpoint}`, {
         headers,
       });
-      console.log('✅ Headers are valid:', data);
+      // console.log('✅ Headers are valid:', data);
       return true;
     } catch (error) {
-      throw new HttpException(
-        `Error CheckConfig: ${error} `,
-        HttpStatus.BAD_REQUEST
-      );
+      throw new HttpException(`Check Config`, HttpStatus.BAD_REQUEST);
       return false;
     }
   }
@@ -266,6 +264,24 @@ export class OkxService {
     } catch (error) {
       throw new HttpException(
         `Error Delete Variable: ${error} `,
+        HttpStatus.BAD_REQUEST
+      );
+    }
+  }
+
+  async DeleteMain(_id: string) {
+    try {
+      // delete main
+      await this.Delete(_id);
+      //delete sub
+      await prisma.apiVariable.updateMany({
+        where: { relationToMain: _id },
+        data: { isDelete: true },
+      });
+      return true;
+    } catch (error) {
+      throw new HttpException(
+        `Error Delete Main: ${error} `,
         HttpStatus.BAD_REQUEST
       );
     }

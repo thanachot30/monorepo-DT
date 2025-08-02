@@ -24,11 +24,13 @@ export class UserService {
         username: _username,
       },
     });
+    console.log(user);
     if (!user) {
+      
       return false;
     }
 
-    return false;
+    return true;
   }
 
   async createUser(_data: createUser) {

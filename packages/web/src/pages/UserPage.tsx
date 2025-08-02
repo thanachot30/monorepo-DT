@@ -4,10 +4,14 @@ import React, { useState } from 'react'
 import axios from 'axios';
 import { User } from '@org/shared-model'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useErrorModal } from '../components/ErrorModalProvider';
+import { useSuccessModal } from '../components/SuccessModalProvider';
+import { handleAxiosError } from '../utils/errorHandler';
 
 
 const UserPage = () => {
-    // const [userList, setuserList] = useState<User[]>([])
+    const { showError } = useErrorModal();
+    const { showSuccess } = useSuccessModal()
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [username, setUsername] = useState('');
@@ -34,8 +38,6 @@ const UserPage = () => {
         setDeleteDialogOpen(false);
     };
 
-
-
     const handleAddUserOpen = () => setOpen(true);
 
     const handleAddUserClose = () => {
@@ -46,48 +48,49 @@ const UserPage = () => {
     };
 
     const handleSaveUser = async () => {
-        // console.log('New User:', { username, email });
-        // if (username && email) {
-        //     const create = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`, {
-        //         username,
-        //         email,
-        //     })
-
-        //     if (create) {
-        //         console.log({ create });
-        //     }
-        // }
-        // handleAddUserClose();
         if (username && email) {
             saveUser({ username, email });
+            handleAddUserClose();
+        } else {
+            showError("Please input user or password")
         }
-        handleAddUserClose();
-    };
 
+    };
     const handleEdit = (userId: string) => {
         console.log('Edit user:', userId);
     };
+    const fetchUsers = async (): Promise<User[] | undefined> => {
+        try {
+            const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
+            return data;
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
 
-    const handleDelete = (userId: number) => {
-        console.log('Delete user:', userId);
-    };
-
-    const fetchUsers = async (): Promise<User[]> => {
-        const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
-        return data;
     };
     const createUser = async (newUser: { username: string; email: string }) => {
-        console.log('createUser');
+        // console.log('createUser');
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`, newUser);
+            // console.log({ data });
+            showSuccess("Success Create User.")
+            return data;
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
 
-        const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`, newUser);
-        return data;
     };
 
     const deleteUser = async (userId: string) => {
-        const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user/delete`, {
-            id: userId
-        })
-        return data
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/user/delete`, {
+                id: userId
+            })
+            return data
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+
     }
 
     const { data: userList, isLoading, error } = useQuery({
@@ -98,8 +101,8 @@ const UserPage = () => {
     const { mutate: saveUser } = useMutation({
         mutationFn: createUser,
         onSuccess: () => {
-            console.log('onSuccess');
             queryClient.invalidateQueries({ queryKey: ['users'] }); // ✅ Refetch user list
+
         },
     });
 

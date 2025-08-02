@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography, IconButton, InputAdornment } from '@mui/material'
+import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Paper, Select, TextField, Typography, IconButton, InputAdornment, InputLabel } from '@mui/material'
 
 import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,14 +7,16 @@ import axios from 'axios';
 import { editSub, ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
 import { Edit, Delete, FamilyRestroomTwoTone } from '@mui/icons-material';
 import { title } from 'process';
-
-
+import { handleAxiosError } from '../utils/errorHandler';
+import { useErrorModal } from '../components/ErrorModalProvider';
+import { useSuccessModal } from '../components/SuccessModalProvider';
 
 
 const OkxPage = () => {
-    const [open, setOpen] = useState(false)
+    const { showError } = useErrorModal();
+    const { showSuccess } = useSuccessModal()
+    const [openView, setOpenView] = useState(false)
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null)
-
     const [isAddSubOpen, setIsAddSubOpen] = useState(false)
     const [strategyType, setStrategyType] = useState<modeProp>()
     const [newSub, setNewSub] = useState<NewSub>({
@@ -55,19 +57,21 @@ const OkxPage = () => {
         // console.log(mode);
         setAddSub(mode)
         if (mode === modeProp.newmain) {
-            setIsDisable(false)
+            resetAllEditStates(true)
+
             setStrategyType(modeProp.newmain)
             reSetNewSub()
 
         } else if (mode === modeProp.newsub) {
             if (!userId) {
-                throw Error("userId is not defind")
+                showError("User Id is not defind")
+                return
             }
             if (!apiId) {
-                throw Error("apiId is not defind")
+                showError("apiId is not defind")
+                return
             }
             resetAllEditStates(true)
-            setIsDisable(false)
             setStrategyType(modeProp.newsub)
             setNewSub({
                 userId: userId,
@@ -80,59 +84,36 @@ const OkxPage = () => {
             })
 
         } else if (mode === modeProp.view) {
-            setIsDisable(true)
+            // setIsDisable(true)
             setStrategyType(modeProp.view)
             // console.log('userId', userId);
             // console.log('apiId', apiId);
             // console.log('see', newSub);
-            try {
-                if (!apiId) {
-                    throw Error("apiId is not defind")
-                }
-                const data = await fetchDetail(apiId)
-                console.log({ data });
-                const mask = data.dataMarking
-                const _title = data.title ?? ""
-                const id_api = data.id
-                setEditSub({ ...editSub, id: id_api })
-                setNewSub({
-                    userId: data.userId,
-                    title: _title,
-                    apiKey: mask.apiKey_mask,
-                    secretKey: mask.secretKey_mask,
-                    passphrase: mask.passphrase_mask,
-                    strategy: data.strategy as unknown as strategyTypeProp
-
-                })
-            } catch (error) {
-                throw Error(`Error get detail: ${error}`)
+            if (!apiId) {
+                showError("ApiId is not defind")
+                return
             }
+            const data = await fetchDetail(apiId)
+            if (!data) {
+                showError('Data Not Found')
+                return
+            }
+
+            const mask = data.dataMarking
+            const _title = data.title ?? ""
+            const id_api = data.id
+            setEditSub({ ...editSub, id: id_api })
+            setNewSub({
+                userId: data.userId,
+                title: _title,
+                apiKey: mask.apiKey_mask,
+                secretKey: mask.secretKey_mask,
+                passphrase: mask.passphrase_mask,
+                strategy: data.strategy as unknown as strategyTypeProp
+
+            })
+
         }
-        // else if (mode === modeProp.edit) {
-        //     setIsDisable(false)
-        //     setStrategyType(modeProp.edit)
-        //     try {
-        //         if (!apiId) {
-        //             throw Error("apiId is not defind")
-        //         }
-        //         const data = await fetchDetail(apiId)
-        //         console.log({ data });
-        //         const mask = data.dataMarking
-        //         const _title = data.title ?? ""
-        //         setNewSub({
-        //             userId: data.userId,
-        //             title: _title,
-        //             apiKey: mask.apiKey_mask,
-        //             secretKey: mask.secretKey_mask,
-        //             passphrase: mask.passphrase_mask,
-        //             strategy: data.strategy as unknown as strategyTypeProp
-
-        //         })
-        //     } catch (error) {
-        //         throw Error(`Error get detail: ${error}`)
-        //     }
-
-        // }
         setIsAddSubOpen(true)
     }
 
@@ -172,7 +153,7 @@ const OkxPage = () => {
         if (userId === _userId && apiId === _id) {
             refetch_apiView()
         }
-        setOpen(true)
+        setOpenView(true)
     }
     const resetAllEditStates = (status: boolean) => {
         setEditingId_TITLE(status);
@@ -188,77 +169,66 @@ const OkxPage = () => {
         setIsEdited(false)
         setApiId(undefined)
         setuserId(undefined)
-        setOpen(false)
+        setOpenView(false)
         setSelectedStrategy(null)
     }
 
     const handleEditApi = async (edit: editSub) => {
+
         try {
-            console.log("editData", editSub);
-            try {
-                const update = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/edit`, editSub)
+            const update = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/edit`, editSub)
 
-            } catch (error) {
-                console.log(error);
-
-            }
         } catch (error) {
-            console.log(error);
+            handleAxiosError(error, showError)
         }
+
     }
 
-    const handleSaveApi = async (newsub: NewSub) => {
+    const handleSaveApi = async (_newsub: NewSub) => {
+        //console.log({ newSub });
+        //check config
+        const _data = {
+            "apiKey": _newsub.apiKey.trim(),
+            "secretKey": _newsub.secretKey.trim(),
+            "passphrase": _newsub.passphrase.trim(),
+        }
         try {
-            //console.log({ newSub });
-            //check config
-            const _data = {
-                "apiKey": newSub.apiKey.trim(),
-                "secretKey": newSub.secretKey.trim(),
-                "passphrase": newSub.passphrase.trim(),
-            }
-            try {
-                await axios.post<boolean>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/check/config`, _data)
-            } catch (error) {
-                console.error('Error checking config');
-                return
-            }
-
-            // console.log({ data });
-            if (!strategyType) {
-                console.log('strategyType is not define')
-                return
-            }
-
-            const data_save: saveApiVariableProp = {
-                userId: newSub.userId.trim(),
-                apiKey: newSub.apiKey.trim(),
-                secretKey: newSub.secretKey.trim(),
-                passphrase: newSub.passphrase.trim(),
-                title: newSub.title.trim(),
-                strategy: strategyType,
-                relationToMain: newSub.relationToMain
-            }
-            try {
-                const res_save = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/save`, data_save)
-                // console.log({ res_save });
-                if (res_save) {
-                    if (userId && apiId) {
-                        await refetch_apiView()
-                    }
-                    await apiList_refetch()
-
-                }
-            } catch (error) {
-                console.log('Error save apivariable');
-            }
-
-            setIsAddSubOpen(false)
-            return
+            await axios.post<boolean>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/check/config`, _data)
         } catch (error) {
-            // console.error('Error while checking config', error);
-            throw Error('Error while checking config')
+            handleAxiosError(error, showError)
+            return
+        }
+        // console.log({ data });
+        if (!strategyType) {
+            showError("StrategyType is not define")
+            return
         }
 
+        const data_save: saveApiVariableProp = {
+            userId: _newsub.userId.trim(),
+            apiKey: _newsub.apiKey.trim(),
+            secretKey: _newsub.secretKey.trim(),
+            passphrase: _newsub.passphrase.trim(),
+            title: _newsub.title.trim(),
+            strategy: strategyType,
+            relationToMain: _newsub.relationToMain
+        }
+        try {
+            const res_save = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/save`, data_save)
+            // console.log({ res_save });
+            if (res_save) {
+                if (userId && apiId) {
+                    await refetch_apiView()
+                }
+                await apiList_refetch()
+                //modal success
+                showSuccess("save Api")
+            }
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+        setIsAddSubOpen(false)
+        return
     }
 
     const handleCancelDelete = () => {
@@ -268,23 +238,39 @@ const OkxPage = () => {
 
     const handleConfirmDelete = async (_id: string, _strategy: string) => {
         if (_strategy === strategyTypeProp.main) {
-            console.log('check main');
-        } else {
-            // console.log({ _id });
+            // console.log('check main');
             try {
-                const deleteApi = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`, {
-                    id: _id
+                await axios.delete(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`, {
+                    data: {
+                        id: _id,
+                        isMain: true
+                    }
+                })
+                // refetch at list api and close view
+                await apiList_refetch()
+                setOpenView(false)
+                setDeleteDialogOpen(false);
+            } catch (error) {
+                handleAxiosError(error, showError)
+            }
+        } else {
+            try {
+                await axios.delete(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`, {
+                    data: {
+                        id: _id,
+                        isMain: false
+                    }
                 })
                 // refetch update disply
                 await refetch_apiView()
-                //
                 setDeleteDialogOpen(false);
-
-                return
             } catch (error) {
-                throw Error("Error Delete Api")
+                handleAxiosError(error, showError)
             }
         }
+
+        //
+        return
     };
 
     const handleDelete = (_id: string, _title: string, _strategy: strategyTypeProp) => {
@@ -297,25 +283,45 @@ const OkxPage = () => {
     }
 
     const fetchApiMain = async () => {
-        const { data } = await axios.get<apiList[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`);
-        return data;
+        try {
+            const { data } = await axios.get<apiList[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx`);
+            return data;
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+
     }
 
     const fetchApiView = async () => {
-        const { data } = await axios.post<apiById>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/${apiId}`, {
-            userId: userId
-        })
-        return data
+        try {
+            const { data } = await axios.post<apiById>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/${apiId}`, {
+                userId: userId
+            })
+            return data
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+
     }
 
-    const fetchUsers = async (): Promise<User[]> => {
-        const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
-        return data;
+    const fetchUsers = async (): Promise<User[] | undefined> => {
+        try {
+            const { data } = await axios.get<User[]>(`${import.meta.env.VITE_BACKEND_BASE_URL}/user`);
+            return data;
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+
     };
 
     const fetchDetail = async (apiId: string) => {
-        const { data } = await axios.post<ApiVariableDto>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/detail/${apiId}`)
-        return data
+        try {
+            const { data } = await axios.post<ApiVariableDto>(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/detail/${apiId}`)
+            return data
+        } catch (error) {
+            handleAxiosError(error, showError)
+        }
+
     }
 
 
@@ -348,8 +354,8 @@ const OkxPage = () => {
     if (apiList_isLoading) return <p>Loading...</p>;
     if (apiList_error instanceof Error) return <p>Error: {apiList_error.message}</p>;
 
-    console.log({ isEdited });
-    console.log({ newSub });
+    // console.log({ isEdited });
+    // console.log({ newSub });
     // console.log({ apiView });
     // // console.log({ users });
     // console.log({ deleteItem });
@@ -393,7 +399,7 @@ const OkxPage = () => {
                 </List>
             </Paper>
 
-            <Dialog open={open} maxWidth="md" fullWidth>
+            <Dialog open={openView} maxWidth="md" fullWidth>
                 <DialogTitle>Strategy</DialogTitle>
                 <DialogContent dividers={true}>
                     {apiView && apiView.user && (
@@ -466,26 +472,28 @@ const OkxPage = () => {
                 <DialogTitle>{strategyType === 'main' ? 'Add Main' : 'Add Sub'}</DialogTitle>
                 <DialogContent dividers>
                     <Box display="flex" flexDirection="column" gap={2}>
-                        <Select
-                            disabled={isDisable}
-                            required
-                            labelId="user-select-label"
-                            id="user-select"
-                            value={strategyType === modeProp.newmain ? newSub.userId : apiView?.user.id}
-                            label="User"
-                            onChange={(e) => setNewSub({ ...newSub, userId: e.target.value })}
+                        <Box>
+                            <InputLabel id="user-select-label">User</InputLabel>
+                            <Select
+                                //disabled={isDisable}
+                                sx={{ width: '100%' }}
+                                labelId="user-select-label"
+                                id="user-select"
+                                value={strategyType === modeProp.newmain ? newSub.userId : apiView?.user.id}
+                                label="User"
+                                onChange={(e) => setNewSub({ ...newSub, userId: e.target.value })}
+                            >
+                                {(strategyType === modeProp.newsub || strategyType === modeProp.view || strategyType === modeProp.edit) && apiView?.user && (
+                                    <MenuItem value={apiView.user.id}>{apiView.user.username}</MenuItem>
+                                )}
 
-                        >
-                            {(strategyType === modeProp.newsub || strategyType === modeProp.view || strategyType === modeProp.edit) && apiView?.user && (
-                                <MenuItem value={apiView.user.id}>{apiView.user.username}</MenuItem>
-                            )}
-
-                            {strategyType === modeProp.newmain && users && users.map((user) => (
-                                <MenuItem key={user.id} value={user.id}>
-                                    {user.username}
-                                </MenuItem>
-                            ))}
-                        </Select>
+                                {strategyType === modeProp.newmain && users && users.map((user) => (
+                                    <MenuItem key={user.id} value={user.id}>
+                                        {user.username}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </Box>
                         <TextField
                             disabled={!editingId_TITLE}
                             label="Strategy Title"
@@ -648,11 +656,20 @@ const OkxPage = () => {
                     <Typography >
                         Are you sure you want to delete{' '}
                         <strong style={{ color: 'red' }} >{deleteItem?.title}</strong>?
+                        {deleteItem?.strategy === strategyTypeProp.main && (
+                            <>
+                                <br />
+                                <strong style={{ color: 'orange' }}>
+                                    ⚠️ This is a main strategy. Deleting it will also delete all associated sub-strategies.
+                                </strong>
+                            </>
+                        )}
                     </Typography>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCancelDelete}>Cancel</Button>
                     <Button variant="contained" color="error" onClick={() => {
+                        console.log({ deleteItem });
                         if (!deleteItem?.id || !deleteItem?.strategy) return;
                         handleConfirmDelete(deleteItem.id, deleteItem.strategy);
                     }}>

@@ -1,7 +1,6 @@
 // Uncomment this line to use CSS modules
 // import styles from './app.module.css';
-import { AppBar, Box, Toolbar, Typography } from '@mui/material';
-import { Router, Routes, Route, BrowserRouter } from 'react-router-dom';
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import Sidebar from '../components/Sliderbar';
 import UserPage from '../pages/UserPage';
 import OkxPage from '../pages/OkxPage';
@@ -15,7 +14,6 @@ export function App() {
           <Route path='/okx' element={<OkxPage />} />
           {/*  */}
         </Routes>
-
       </Sidebar>
     </BrowserRouter>
   );
