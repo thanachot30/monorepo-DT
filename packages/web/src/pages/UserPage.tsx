@@ -119,7 +119,7 @@ const UserPage = () => {
 
 
     return (
-        <Container maxWidth="lg">
+        <Container maxWidth="md">
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5">User List</Typography>
                 <Button variant="contained" color="primary" onClick={handleAddUserOpen}>
@@ -134,9 +134,9 @@ const UserPage = () => {
                             <ListItem alignItems="flex-start"
                                 secondaryAction={
                                     <Box>
-                                        <IconButton edge="end" size='small' color='info' onClick={() => handleEdit(user.id)}>
+                                        {/* <IconButton edge="end" size='small' color='info' onClick={() => handleEdit(user.id)}>
                                             <Edit />
-                                        </IconButton>
+                                        </IconButton> */}
                                         <IconButton edge="end" size='small' color='error' onClick={() => handleDeleteClick(user.id, user.username)}>
                                             <Delete />
                                         </IconButton>

@@ -4,7 +4,7 @@ import { Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTit
 import React, { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { editSub, ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp } from '@org/shared-model';
+import { editSub, ApiVariableDto, DeleteItemProp, NewSub, Strategy, User, apiById, apiList, maskData, modeProp, saveApiVariableProp, strategyTypeProp, StrategyItemDetail } from '@org/shared-model';
 import { Edit, Delete, FamilyRestroomTwoTone } from '@mui/icons-material';
 import { title } from 'process';
 import { handleAxiosError } from '../utils/errorHandler';
@@ -44,7 +44,8 @@ const OkxPage = () => {
     const [isDisable, setIsDisable] = useState<boolean>(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteItem, setDeleteItem] = useState<DeleteItemProp>()
-    //
+    const [deleteMemberItem, setDeleteMemberItem] = useState<StrategyItemDetail[]>()
+    //  
     const [isEdited, setIsEdited] = useState<boolean>(false)
     const [editingId_TITLE, setEditingId_TITLE] = useState<boolean>(false);
     const [editingId_APIKEY, setEditingId_APIKEY] = useState<boolean>(false);
@@ -174,10 +175,11 @@ const OkxPage = () => {
     }
 
     const handleEditApi = async (edit: editSub) => {
-
         try {
-            const update = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/edit`, editSub)
-
+            await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/edit`, editSub)
+            showSuccess("Edit information")
+            resetAllEditStates(false)
+            setIsAddSubOpen(false)
         } catch (error) {
             handleAxiosError(error, showError)
         }
@@ -227,7 +229,9 @@ const OkxPage = () => {
         } catch (error) {
             handleAxiosError(error, showError)
         }
+        resetAllEditStates(false)
         setIsAddSubOpen(false)
+
         return
     }
 
@@ -273,13 +277,28 @@ const OkxPage = () => {
         return
     };
 
-    const handleDelete = (_id: string, _title: string, _strategy: strategyTypeProp) => {
-        setDeleteItem({
-            id: _id,
-            title: _title,
-            strategy: _strategy
-        })
-        setDeleteDialogOpen(true);
+    const handleDelete = async (_id: string, _title: string, _strategy: strategyTypeProp) => {
+        console.log({ userId, apiId });
+        try {
+            const { data } = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/okx/${apiId}`, {
+                userId: userId
+            })
+            if (!data) {
+                showError("Data Api not found")
+                return
+            }
+            setDeleteMemberItem(data.data)
+            setDeleteItem({
+                id: _id,
+                title: _title,
+                strategy: _strategy
+            })
+            setDeleteDialogOpen(true);
+        } catch (error) {
+            showError(`Error handleDelete:${error}`)
+        }
+        //
+
     }
 
     const fetchApiMain = async () => {
@@ -359,6 +378,11 @@ const OkxPage = () => {
     // console.log({ apiView });
     // // console.log({ users });
     // console.log({ deleteItem });
+    // console.log({ userId, apiId }); //global
+
+    console.log(deleteMemberItem);
+
+
 
 
 
@@ -662,6 +686,14 @@ const OkxPage = () => {
                                 <strong style={{ color: 'orange' }}>
                                     ⚠️ This is a main strategy. Deleting it will also delete all associated sub-strategies.
                                 </strong>
+                                <ul>
+                                    {deleteMemberItem &&
+                                        deleteMemberItem.map((sub) => (
+                                            <li key={sub.id}>{sub.title} ({sub.strategy})</li>
+                                        ))
+                                    }
+                                </ul>
+
                             </>
                         )}
                     </Typography>
@@ -669,7 +701,7 @@ const OkxPage = () => {
                 <DialogActions>
                     <Button onClick={handleCancelDelete}>Cancel</Button>
                     <Button variant="contained" color="error" onClick={() => {
-                        console.log({ deleteItem });
+
                         if (!deleteItem?.id || !deleteItem?.strategy) return;
                         handleConfirmDelete(deleteItem.id, deleteItem.strategy);
                     }}>

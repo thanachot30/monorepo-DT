@@ -67,12 +67,14 @@ export interface apiList {
   userId: string;
 }
 
+export interface StrategyItemDetail {
+  id: string; // UUID
+  strategy: string; // allowed values
+  title: string; // name of the strategy
+}
+
 export interface apiById {
-  data: {
-    id: string;
-    strategy: string;
-    title: string;
-  }[];
+  data: StrategyItemDetail[];
   user: {
     id: string;
     username: string;
