@@ -379,15 +379,8 @@ const OkxPage = () => {
     // // console.log({ users });
     // console.log({ deleteItem });
     // console.log({ userId, apiId }); //global
-
-    console.log(deleteMemberItem);
-
-
-
-
-
     return (
-        <Container maxWidth="lg">
+        <Container maxWidth="md">
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5">OKX</Typography>
                 <Button variant="contained" color="primary" onClick={() => handleOpenAddSub(null, modeProp.newmain)}>
