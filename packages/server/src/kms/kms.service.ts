@@ -4,22 +4,15 @@ import { KeyManagementServiceClient } from '@google-cloud/kms';
 
 @Injectable()
 export class KmsService {
-  private kmsClient: KeyManagementServiceClient;
-  private keyName: string;
-  constructor(private configService: ConfigService) {
-    // if (
-    //   !fs.existsSync(
-    //     this.configService.get<string>('GOOGLE_APPLICATION_CREDENTIALS'),
-    //   )
-    // ) {
-    //   throw new Error('Google Cloud KMS Key file not found.');
-    // }
+  private kmsClient!: KeyManagementServiceClient;
+  private keyName!: string;
+  constructor(private config: ConfigService) {
     this.kmsClient = new KeyManagementServiceClient();
     this.keyName = this.kmsClient.cryptoKeyPath(
-      this.configService.get<string>('GOOGLE_CLOUD_PROJECT') || '',
-      this.configService.get<string>('KMS_LOCATION') || '', // e.g., "asia-southeast1"
-      this.configService.get<string>('KMS_KEYRING') || '', // e.g., "my-key-ring"
-      this.configService.get<string>('KMS_KEY') || '' // e.g., "my-key"
+      this.config.get<string>('GOOGLE_CLOUD_PROJECT') || '',
+      this.config.get<string>('KMS_LOCATION') || '', // e.g., "asia-southeast1"
+      this.config.get<string>('KMS_KEYRING') || '', // e.g., "my-key-ring"
+      this.config.get<string>('KMS_KEY') || '' // e.g., "my-key"
     );
   }
 
